@@ -1,0 +1,56 @@
+{
+  "name": "iccap-mdl",
+  "displayName": "IC-CAP MDL",
+  "description": "Highlighting, folding and completion for Keysight IC-CAP .mdl (MDIF) model files",
+  "version": "1.0.0",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:mdl"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "mdl.foldDataBlocks",
+        "title": "MDL: Fold Data Blocks"
+      },
+      {
+        "command": "mdl.checkDeck",
+        "title": "MDL: Run Deck Checks"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "mdl.foldDataBlocks",
+        "key": "ctrl+alt+shift+f",
+        "when": "editorTextFocus && editorLangId == mdl"
+      }
+    ],
+    "languages": [
+      {
+        "id": "mdl",
+        "aliases": [
+          "IC-CAP MDL",
+          "MDL"
+        ],
+        "extensions": [
+          ".mdl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "mdl",
+        "scopeName": "source.mdl",
+        "path": "./syntaxes/mdl.tmLanguage.json"
+      }
+    ]
+  }
+}

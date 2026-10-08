@@ -1,0 +1,20 @@
+{
+  "autoClosingPairs": [
+    { "open": "{", "close": "}" },
+    { "open": "(", "close": ")" },
+    { "open": "\"", "close": "\"" }
+  ],
+  "brackets": [
+    ["{", "}"],
+    ["(", ")"]
+  ],
+  "surroundingPairs": [
+    ["{", "}"],
+    ["(", ")"],
+    ["\"", "\""]
+  ],
+  "indentationRules": {
+    "increaseIndentPattern": "^\\s*(LINK|list|TABLE|HYPTABLE|BLKEDIT|data|circuitdeck|OPTIMEDIT)\\b.*$",
+    "decreaseIndentPattern": "^\\s*}$"
+  }
+}

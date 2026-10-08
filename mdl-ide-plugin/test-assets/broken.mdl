@@ -1,0 +1,66 @@
+LINK MODEL "Broken" "790.004"
+{
+TABLE "Variable Table" "790.004"
+{
+element 0 "Name" "SIMULATOR"
+element 0 "Value" "hpeesofsim
+}
+LINK CIRC "Circuit" "790.004"
+{
+data
+{
+circuitdeck
+{
+ define X (A B)
+ C:Cpg 0 gix C=9f
+ R:Rg gi gix ( R=1.4
+ M:X1 di gi si t
+ model M t l=L w=WF
+ end X
+}
+}
+}
+LINK PS "Parameter Set" "790.004"
+{
+data
+{
+PSTABLE "Parameter Table"
+{
+param M.VOFF "-1.930 "
+fullprecision M.VOFF "-1.93"
+param WF " 75.00u"
+}
+}
+}
+LINK XFORM "opt" "790.004"
+{
+data
+{
+OPTIMEDIT
+{
+element 0 "Use" "Yes"
+element 0 "Name" "M.VOFF"
+element 0 "Min" "120m"
+element 0 "Max" "220m"
+element 0 "Stored" "260m"
+element 1 "Use" "Yes"
+element 1 "Name" "!M.UB"
+element 1 "Min" "0"
+element 1 "Max" "1"
+element 1 "Stored" "0.5"
+element 2 "Use" "No"
+element 2 "Name" "M.CDSL"
+element 2 "Min" "abc"
+element 2 "Max" "1"
+element 2 "Stored" "0.5"
+}
+}
+}
+}
+}
+LINK MACRO "mdf" "790.004"
+{
+data
+{
+element 0 "x" "y"
+

@@ -1,0 +1,82 @@
+LINK MODEL "Sample" "790.004"
+{
+View model_window 1 "Model"
+TABLE "Variable Table" "790.004"
+{
+element 0 "Name" "SIMULATOR"
+element 0 "Value" "hpeesofsim"
+}
+}
+LINK CIRC "Circuit" "790.004"
+{
+data
+{
+circuitdeck
+{
+ define GN25_OSV (S D G)
+ ; comment inside the netlist
+ #load "veriloga", "scripts/hdu_ghemt_switch.vax"
+ #echo WF = $dpar(WF=100u)
+ global Z0 = 50
+ LG = 0.5 * NF * 1e-9
+ VOFF = if (TEMP < 25) then -2.5 else -2.0 endif
+ LoadFund = fg(indexs11)
+ LoadArray = list(0, LoadFund, file {DAC0, "lval0"})
+ Options ResourceUsage=yes Temp=25
+ C:Cpg 0 gix C=9f
+ R:Rg gi gix R=1.4
+ M:X1 di gi si t
+ model M hdu_ghemt_switch l=L w=WF nf=NF
+ end GN25_OSV
+}
+}
+}
+LINK PS "Parameter Set" "790.004"
+{
+data
+{
+PSTABLE "Parameter Table"
+{
+param M.VOFF "-1.930 "
+fullprecision M.VOFF "-1.93"
+}
+}
+}
+LINK MACRO "mdf_iv" "790.004"
+{
+data
+{
+BLKEDIT "Macro Editor"
+{
+import iccap
+# depend icap
+def process():
+    type = "x"
+    return size(type)
+}
+}
+}
+LINK XFORM "opt" "790.004"
+{
+data
+{
+BLKEDIT "Program Body"
+{
+! comment in PEL
+GLOBAL_VAR VTH_INIT
+GET_REAL "Enter initial VTH", "0.45", VTH_INIT
+FOR i = 0 TO 10 STEP 1
+    x = x + i
+NEXT i
+IF x > 2.0 THEN
+    RETURN_VALUE PI * J
+ELSE
+    RETURN_VALUE x
+ENDIF
+WHILE i < 5
+    i = i + 1
+ENDWHILE
+ICCAP_FUNC("/Model/DUT/Setup", "Simulate")
+}
+}
+}

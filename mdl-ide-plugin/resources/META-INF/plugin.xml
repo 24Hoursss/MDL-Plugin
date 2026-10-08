@@ -1,0 +1,28 @@
+<idea-plugin>
+    <id>mdlide.iccap-mdl</id>
+    <name>IC-CAP MDL</name>
+    <vendor>local</vendor>
+    <version>1.0.0</version>
+
+    <idea-version since-build="261" until-build="261.*"/>
+
+    <description><![CDATA[
+        Syntax highlighting, code folding and brace matching for Keysight IC-CAP
+        .mdl (MDIF model definition) files.<br>
+        Folds the column-0 brace blocks (LINK MODEL / LINK DUT / LINK DAT / TABLE /
+        BLKEDIT / circuitdeck ...) to their header line, colors params, elements,
+        sweeps, netlist keywords and <code>#echo</code> / <code>$dpar()</code> markup.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileTypeFactory implementationClass="mdlide.MdlFileTypeFactory"/>
+        <lang.parserDefinition language="MDL" implementationClass="mdlide.MdlParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="MDL" implementationClass="mdlide.MdlHighlighterFactory"/>
+        <lang.foldingBuilder language="MDL" implementationClass="mdlide.MdlFoldingBuilder"/>
+        <lang.braceMatcher language="MDL" implementationClass="mdlide.MdlBraceMatcher"/>
+        <completion.contributor language="MDL" implementationClass="mdlide.MdlCompletionContributor"/>
+        <annotator language="MDL" implementationClass="mdlide.MdlAnnotator"/>
+    </extensions>
+</idea-plugin>

@@ -1,0 +1,121 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vscode-textmate/main/textmate.json",
+  "name": "IC-CAP MDL",
+  "scopeName": "source.mdl",
+  "patterns": [
+    {
+      "name": "keyword.control.mdl",
+      "match": "^\\s*(LINK)\\s+(MODEL|DUT|DAT|SWEEP|OUT|XFORM|PLOT|MACRO|CIRC|TCIRC|PS|DPS)\\b",
+      "captures": {
+        "1": { "name": "keyword.control.mdl" },
+        "2": { "name": "keyword.control.linkkind.mdl" }
+      }
+    },
+    {
+      "match": "^(\\s*)(#uselib|#load|#echo|#include|#define|#undef|#ifdef|#ifndef|#if|#else|#endif)\\b",
+      "captures": {
+        "1": { "name": "punctuation.whitespace.mdl" },
+        "2": { "name": "keyword.other.directive.mdl" }
+      }
+    },
+    {
+      "begin": "^\\s*circuitdeck\\s*$",
+      "end": "^\\s*}$",
+      "patterns": [
+        {
+          "match": "^(\\s*)(#uselib|#load|#echo|#include|#define|#undef|#ifdef|#ifndef|#if|#else|#endif)\\b",
+          "captures": {
+            "1": { "name": "punctuation.whitespace.mdl" },
+            "2": { "name": "keyword.other.directive.mdl" }
+          }
+        },
+        {
+          "match": "^\\s*([A-Za-z_][A-Za-z0-9_]*):([A-Za-z_][A-Za-z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.component.mdl" },
+            "2": { "name": "entity.name.function.mdl" }
+          }
+        },
+        { "name": "comment.line.mdl", "match": ";.*$" },
+        {
+          "match": "\\b(define|model|end|subckt|ends|parameters|include|global|globalnode|ground|Options|ParamSweep|if|then|else|endif|equals|not|and|or)\\b",
+          "name": "keyword.control.netlist.mdl"
+        },
+        {
+          "match": "\\b(file|list|dep_data|read_data|access_all_data|fg|index|abs|sqrt|exp|log|pow|sin|cos|mag|min|max|floor|ceil|signum)\\s*\\(",
+          "name": "support.function.mdl"
+        },
+        {
+          "name": "string.quoted.double.mdl",
+          "match": "\"[^\"]*\""
+        },
+        {
+          "name": "constant.numeric.mdl",
+          "match": "\\b(?:(?:\\d+(?:\\.\\d+)?)|(?:\\.\\d+))(?:[eE][+-]?\\d+)?[a-zA-Z]?\\b"
+        },
+        {
+          "match": "\\$(dpar|mpar|xpar|var)\\b",
+          "name": "variable.other.mdl"
+        }
+      ]
+    },
+    {
+      "begin": "^\\s*BLKEDIT\\s+\"Program Body\"\\s*$",
+      "end": "^\\s*}$",
+      "patterns": [
+        { "name": "comment.line.pel.mdl", "match": "!.*$" },
+        {
+          "match": "(?i)\\b(PI|2PI|J)\\b",
+          "name": "constant.language.pel.mdl"
+        },
+        {
+          "match": "(?i)\\b(FOR|STEP|NEXT|LOOP|ENDLOOP|WHILE|ENDWHILE|IF|ELSEIF|ELSE|ENDIF|EXIT|RETURN|RETURN_VALUE|GLOBAL_VAR|GET_INT|GET_REAL|GET_STRING|LINPUT|GET_DATASET|ICCAP_FUNC|USERC_num_of_points|SIZEOF|FLOOR|ABS|MAG|SIZE|REAL|IMAG|NOT|AND|OR|SIN|COS|EXP|LOG|SQRT|TAN|ATAN|POW|MIN|MAX|MOD|TWOPORT)\\b",
+          "name": "keyword.control.pel.mdl"
+        },
+        {
+          "name": "string.quoted.double.mdl",
+          "match": "\"[^\"]*\""
+        },
+        {
+          "name": "constant.numeric.mdl",
+          "match": "\\b(?:(?:\\d+(?:\\.\\d+)?)|(?:\\.\\d+))(?:[eE][+-]?\\d+)?[a-zA-Z]?\\b"
+        }
+      ]
+    },
+    {
+      "begin": "^\\s*BLKEDIT\\s+\"Macro Editor\"\\s*$",
+      "end": "^\\s*}$",
+      "patterns": [
+        { "include": "source.python" }
+      ]
+    },
+    {
+      "match": "^\\s*(LINK|list|element|param|fullprecision|View|dataset|datasize|type|member|BLKEDIT|TABLE|HYPTABLE|OPTIMEDIT|__iccapDataBlockEnd)\\b",
+      "captures": {
+        "1": { "name": "keyword.control.mdl" }
+      }
+    },
+    {
+      "match": "^\\s*(data)\\s*$",
+      "captures": {
+        "1": { "name": "storage.type.mdl" }
+      }
+    },
+    {
+      "name": "string.quoted.double.mdl",
+      "match": "\"[^\"]*\""
+    },
+    {
+      "name": "constant.numeric.mdl",
+      "match": "\\b(?:(?:\\d+(?:\\.\\d+)?)|(?:\\.\\d+))(?:[eE][+-]?\\d+)?[a-zA-Z]?\\b"
+    },
+    {
+      "match": "\\$(dpar|mpar|xpar|var)\\b",
+      "name": "variable.other.mdl"
+    },
+    {
+      "match": "#(uselib|load|echo|include|define|undef|ifdef|ifndef|if|else|endif)\\b",
+      "name": "keyword.other.directive.mdl"
+    }
+  ]
+}

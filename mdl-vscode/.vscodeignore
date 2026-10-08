@@ -1,0 +1,5 @@
+test-node.js
+build/**
+**/*.log
+*.cmd
+validate_vsix.py
