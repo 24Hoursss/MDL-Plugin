@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 
@@ -89,7 +90,7 @@ public final class MdlFoldingBuilder extends FoldingBuilderEx {
                                 // measured-data blocks are huge; collapse them on open
                                 folds.add(new FoldingDescriptor(
                                         file.getNode(), new TextRange(start, ce), null,
-                                        placeholder, Boolean.TRUE, null));
+                                        placeholder, Boolean.TRUE, Collections.emptySet()));
                             } else {
                                 folds.add(new FoldingDescriptor(file, start, ce, null, placeholder));
                             }
