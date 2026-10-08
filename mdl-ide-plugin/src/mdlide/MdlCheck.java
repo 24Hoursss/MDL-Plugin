@@ -214,11 +214,42 @@ public final class MdlCheck {
 
     private static void checkOptimize(String text, List<int[]> ranges,
                                       int fromLine, int toLineExclusive, List<Issue> issues) {
+        // The Optimize editor holds several tables ("More", "Input Table",
+        // "Param Table", "Options Table") that share the same row indices;
+        // only the Param Table rows carry Use/Name/Min/Max/Stored.
         Map<Integer, Map<String, String>> rows = new HashMap<>();
         Map<Integer, Integer> firstLine = new HashMap<>();
+        boolean pendingParam = false;
+        boolean inParam = false;
+        int subDepth = 0;
         for (int li = fromLine; li < toLineExclusive; li++) {
             String line = text.substring(ranges.get(li)[0], ranges.get(li)[1]);
-            Matcher m = ELEMENT_ROW.matcher(line.trim());
+            String trimmed = line.trim();
+            if (trimmed.startsWith("TABLE \"Param Table\"")) {
+                pendingParam = true;
+                continue;
+            }
+            if (trimmed.equals("{") && line.startsWith("{")) {
+                subDepth++;
+                if (pendingParam) {
+                    inParam = true;
+                    pendingParam = false;
+                }
+                continue;
+            }
+            if (trimmed.equals("}") && line.startsWith("}")) {
+                if (inParam && subDepth == 1) {
+                    inParam = false;
+                }
+                if (subDepth > 0) {
+                    subDepth--;
+                }
+                continue;
+            }
+            if (!inParam) {
+                continue;
+            }
+            Matcher m = ELEMENT_ROW.matcher(trimmed);
             if (m.matches()) {
                 int idx = Integer.parseInt(m.group(1));
                 rows.computeIfAbsent(idx, k -> new HashMap<>()).put(m.group(2), m.group(3));

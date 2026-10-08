@@ -38,6 +38,19 @@ data
 {
 OPTIMEDIT
 {
+TABLE "More" 0 "790.004"
+{
+element 0 "Optim Mode" "R"
+element 0 "Rand Iters" "300"
+}
+TABLE "Input Table" 1 "790.004"
+{
+element 0 "Target" "id.m"
+element 0 "Simulated" "id.s"
+element 0 "Weight" "1"
+}
+TABLE "Param Table" 1 "790.004"
+{
 element 0 "Use" "Yes"
 element 0 "Name" "M.VOFF"
 element 0 "Min" "120m"
@@ -53,6 +66,12 @@ element 2 "Name" "M.CDSL"
 element 2 "Min" "abc"
 element 2 "Max" "1"
 element 2 "Stored" "0.5"
+}
+TABLE "Options Table" 0 "790.004"
+{
+element 0 "RMS error" "10m"
+element 0 "Max error" "10m"
+}
 }
 }
 }

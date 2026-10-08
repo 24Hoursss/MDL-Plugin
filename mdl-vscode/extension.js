@@ -319,10 +319,41 @@ function quotedName(line, kind) {
 const ELEMENT_RE = /^\s*element\s+(\d+)\s+"([^"]+)"\s+"([^"]*)"/;
 
 function checkOptimize(document, from, to, add) {
+    // Multiple tables ("More", "Input Table", "Param Table", "Options Table")
+    // share the same row indices; only the Param Table rows carry the bounds.
     const rows = new Map();
     const first = new Map();
+    let pendingParam = false;
+    let inParam = false;
+    let subDepth = 0;
     for (let line = from; line < to; line++) {
-        const m = ELEMENT_RE.exec(document.lineAt(line).text);
+        const text = document.lineAt(line).text;
+        const trimmed = text.trimEnd();
+        if (trimmed.startsWith('TABLE "Param Table"')) {
+            pendingParam = true;
+            continue;
+        }
+        if (trimmed === '{' && text[0] === '{') {
+            subDepth++;
+            if (pendingParam) {
+                inParam = true;
+                pendingParam = false;
+            }
+            continue;
+        }
+        if (trimmed === '}' && text[0] === '}') {
+            if (inParam && subDepth === 1) {
+                inParam = false;
+            }
+            if (subDepth > 0) {
+                subDepth--;
+            }
+            continue;
+        }
+        if (!inParam) {
+            continue;
+        }
+        const m = ELEMENT_RE.exec(text);
         if (!m) continue;
         const idx = parseInt(m[1], 10);
         if (!rows.has(idx)) rows.set(idx, new Map());

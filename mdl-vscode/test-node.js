@@ -147,8 +147,8 @@ if (broken) {
     console.log(`mdCheck(${path.basename(broken)}): issues=${bissues.length} errors=${bErrors}`);
 } else {
     const samples = [
-        ['sample', 'C:/Users/PC/Desktop/mdl-ide-plugin/test-assets/sample.mdl', 0],
-        ['broken', 'C:/Users/PC/Desktop/mdl-ide-plugin/test-assets/broken.mdl', 8],
+        ['sample', 'C:/Users/PC/Desktop/MDL-Plugin/mdl-ide-plugin/test-assets/sample.mdl', 0],
+        ['broken', 'C:/Users/PC/Desktop/MDL-Plugin/mdl-ide-plugin/test-assets/broken.mdl', 8],
         ['template', 'C:/Users/PC/Desktop/python/skills/iccap-asm-switch-modeling/scripts/ASM_Switch_Example.mdl', 58],
     ];
     for (const [name, file, want] of samples) {
