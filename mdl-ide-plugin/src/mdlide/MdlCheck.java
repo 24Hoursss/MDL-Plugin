@@ -21,8 +21,8 @@ import java.util.regex.Pattern;
  *   <li>parentheses / brackets / inline braces must pair (strings excluded)</li>
  *   <li>strings must close on the same line (Python docstrings excluded)</li>
  *   <li>{@code param} and its {@code fullprecision} row must both exist</li>
- *   <li>an Optimize row with {@code Use=Yes} needs numeric Min/Max/Stored with
- *       Min &lt;= Stored &lt;= Max, and a name that does not start with '!'</li>
+ *   <li>an Optimize row with {@code Use=Yes} needs numeric Min and Max, and a
+ *       name that does not start with '!'</li>
  * </ul>
  * Pure text logic (no IDEA services): unit-testable off the IDE.
  */
@@ -275,15 +275,9 @@ public final class MdlCheck {
             }
             Double min = parseValue(row.getOrDefault("Min", ""));
             Double max = parseValue(row.getOrDefault("Max", ""));
-            Double stored = parseValue(row.getOrDefault("Stored", ""));
-            if (min == null || max == null || stored == null) {
+            if (min == null || max == null) {
                 add(issues, true, offset, 1,
-                        "Use=Yes: row '" + name + "' needs numeric Min, Max and Stored");
-            } else if (stored < min || stored > max) {
-                add(issues, true, offset, 1,
-                        "Use=Yes: Stored " + row.get("Stored").trim()
-                                + " outside Min " + row.get("Min").trim()
-                                + " .. Max " + row.get("Max").trim());
+                        "Use=Yes: row '" + name + "' needs numeric Min and Max");
             }
         }
     }

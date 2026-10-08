@@ -48,7 +48,7 @@ public final class MdlFoldingBuilder extends FoldingBuilderEx {
 
     @Override
     public boolean isCollapsedByDefault(@NotNull ASTNode node) {
-        return false;
+        return true;
     }
 
     private FoldingDescriptor @NotNull [] compute(@NotNull Document document, @NotNull PsiElement file) {
@@ -86,14 +86,11 @@ public final class MdlFoldingBuilder extends FoldingBuilderEx {
                             String placeholder = (open.headerStart >= 0
                                     ? text.subSequence(open.headerStart, open.headerEnd).toString()
                                     : FALLBACK_PLACEHOLDER).trim();
-                            if ("data".equals(placeholder)) {
-                                // measured-data blocks are huge; collapse them on open
-                                folds.add(new FoldingDescriptor(
-                                        file.getNode(), new TextRange(start, ce), null,
-                                        placeholder, Boolean.TRUE, Collections.emptySet()));
-                            } else {
-                                folds.add(new FoldingDescriptor(file, start, ce, null, placeholder));
-                            }
+                            // Every block opens collapsed: a deck shows as an
+                            // outline of headers and expands on demand.
+                            folds.add(new FoldingDescriptor(
+                                    file.getNode(), new TextRange(start, ce), null,
+                                    placeholder, Boolean.TRUE, Collections.emptySet()));
                         }
                     }
                 } else {

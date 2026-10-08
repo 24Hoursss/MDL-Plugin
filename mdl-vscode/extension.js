@@ -372,14 +372,8 @@ function checkOptimize(document, from, to, add) {
         }
         const min = parseValue(row.get('Min') || '');
         const max = parseValue(row.get('Max') || '');
-        const stored = parseValue(row.get('Stored') || '');
-        if (min === null || max === null || stored === null) {
-            add(line, 0, 1, true, "Use=Yes: row '" + name + "' needs numeric Min, Max and Stored");
-        } else if (stored < min || stored > max) {
-            add(line, 0, 1, true,
-                "Use=Yes: Stored " + (row.get('Stored') || '').trim()
-                + ' outside Min ' + (row.get('Min') || '').trim()
-                + ' .. Max ' + (row.get('Max') || '').trim());
+        if (min === null || max === null) {
+            add(line, 0, 1, true, "Use=Yes: row '" + name + "' needs numeric Min and Max");
         }
     }
 }
@@ -482,6 +476,30 @@ async function foldDataBlocks() {
     editor.selections = original;
 }
 
+// VSCode cannot collapse ranges by default, so a freshly opened .mdl is
+// folded recursively once (outline view), closest to the IDE plugin's
+// collapsed-by-default blocks.
+const foldedOnce = new Set();
+
+async function collapseAllOnOpen(editor) {
+    const doc = editor && editor.document;
+    if (!doc || doc.languageId !== 'mdl') {
+        return;
+    }
+    const key = doc.uri.toString();
+    if (foldedOnce.has(key)) {
+        return;
+    }
+    foldedOnce.add(key);
+    setTimeout(async () => {
+        const e = vscode.window.activeTextEditor;
+        if (!e || e.document.uri.toString() !== key) {
+            return;
+        }
+        await vscode.commands.executeCommand('editor.foldAll');
+    }, 250);
+}
+
 function activate(context) {
     context.subscriptions.push(
         vscode.languages.registerCompletionItemProvider('mdl', new MdlCompletionProvider(), '#', '$'),
@@ -496,11 +514,13 @@ function activate(context) {
             diagTimer = setTimeout(() => refreshDiagnostics(e.document), 400);
         }),
         vscode.workspace.onDidOpenTextDocument((d) => refreshDiagnostics(d)),
+        vscode.window.onDidChangeActiveTextEditor((e) => collapseAllOnOpen(e)),
         diagnostics
     );
     for (const doc of vscode.workspace.textDocuments) {
         refreshDiagnostics(doc);
     }
+    collapseAllOnOpen(vscode.window.activeTextEditor);
 }
 
 function deactivate() {}

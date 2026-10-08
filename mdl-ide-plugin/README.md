@@ -44,10 +44,10 @@ Syntax highlighting, code folding and brace matching for Keysight IC-CAP `.mdl`
   `$dpar`/`$mpar`/`$xpar`/`$var` after `$`, netlist keywords
   (`define`/`model`/`end`/...) when the caret is inside a `circuitdeck` body
   (same context rules as the VSCode extension).
-- **Measured-data blocks are collapsed by default**: every block whose header
-  line is exactly `data` (the raw point tables, which can be megabytes in a
-  deck with embedded data) opens folded; expand with `Ctrl+=` / the gutter
-  icon.
+- **Every block opens collapsed (recursive)**: a deck opens as an outline of
+  headers (`LINK MODEL` / `TABLE` / `data` / `LINK XFORM` ...) and expands on
+  demand; expand with `Ctrl+=` / `Ctrl+Shift+=` or the gutter icon. The
+  outermost whole-file pair stays expanded so the model header stays visible.
 
 ## Large files
 
@@ -139,8 +139,8 @@ An annotator (`MdlAnnotator` / `MdlCheck`) flags problems with red squiggles
   bodies excluded).
 - **param/fullprecision**: a `param` row without its `fullprecision` twin
   (agent rule: always update both) and vice versa.
-- **Optimize Use=Yes rows**: numeric Min/Max/Stored required with
-  Min <= Stored <= Max; a `!`-prefixed unresolved name cannot be used.
+- **Optimize Use=Yes rows**: numeric Min and Max required; a `!`-prefixed
+  unresolved name cannot be used. Stored is intentionally not checked.
 
 Run from the CLI: `mdlide.test.CheckDump` (see tools-src) or
 `MdlCheck.check(String)` — the same logic is exposed headlessly.

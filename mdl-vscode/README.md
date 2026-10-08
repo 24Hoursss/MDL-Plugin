@@ -29,7 +29,10 @@ repo's `iccap-mdl-edit` skill/agent (`agents/iccap-mdl-edit/mdl_edit.py`,
 - **Folding**: column-0 brace blocks fold to their header line (same rule as
   the PyCharm plugin: only lines that are exactly `{`/`}` at column 0 open or
   close a block; indented braces in Program bodies are body text). Implemented
-  as a FoldingRangeProvider, so VSCode folds exactly like the IDE plugin.
+  as a FoldingRangeProvider. A freshly opened .mdl is folded recursively once
+  (outline view), the closest VSCode equivalent to the IDE's
+  collapsed-by-default blocks; reuse the fold state or run Fold All again as
+  needed.
 - **Fold measured data quickly**: the command **MDL: Fold Data Blocks**
   (`Ctrl+Alt+Shift+F`) folds every `data` block (the raw point tables) in one
   go. VSCode has no API for "collapsed by default", so this is the equivalent
@@ -71,8 +74,8 @@ in the Problems panel / squiggles as you type (debounced):
   inline braces/strings (excluded)
 - unterminated strings (Python bodies excluded)
 - `param` / `fullprecision` pairing
-- Optimize `Use=Yes` rows: numeric Min/Max/Stored with Min <= Stored <= Max,
-  no `!`-prefixed unresolved names
+- Optimize `Use=Yes` rows: numeric Min and Max required, no `!`-prefixed
+  unresolved names (Stored is intentionally not checked)
 
 Command **MDL: Run Deck Checks** (or `set SKIP_PUBLISH=1` + the checks pass
 message) summarizes errors/warnings for the active file.
