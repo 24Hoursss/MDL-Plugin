@@ -13,6 +13,8 @@ public final class MdlTokenTypes {
 
     public static final IElementType KEYWORD = new IElementType("MDL_KEYWORD", MdlLanguage.INSTANCE);
     public static final IElementType LINK_KIND = new IElementType("MDL_LINK_KIND", MdlLanguage.INSTANCE);
+    /** Second word of a View line (window name). */
+    public static final IElementType VIEW_KIND = new IElementType("MDL_VIEW_KIND", MdlLanguage.INSTANCE);
     public static final IElementType LBRACE = new IElementType("MDL_LBRACE", MdlLanguage.INSTANCE);
     public static final IElementType RBRACE = new IElementType("MDL_RBRACE", MdlLanguage.INSTANCE);
     public static final IElementType LPAREN = new IElementType("MDL_LPAREN", MdlLanguage.INSTANCE);

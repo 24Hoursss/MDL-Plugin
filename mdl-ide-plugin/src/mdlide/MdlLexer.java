@@ -36,9 +36,10 @@ import java.util.Set;
  *   bit 3      pendingBlk   (saw "BLKEDIT" at line start, waiting for its string)
  *   bit 4      pendingPel   (the BLKEDIT string was "Program Body")
  *   bit 5      pendingPy    (the BLKEDIT string was "Macro Editor")
- *   bits 6-7   ctx          0 none, 1 circuitdeck, 2 PEL, 3 Python
- *   bits 8-19  ctxDepth     brace depth of the context block
- *   bits 20-31 depth        open column-0 '{' count
+ *   bit 6      prevWasView  (a LINE-start keyword "View" was the previous token)
+ *   bits 7-8   ctx          0 none, 1 circuitdeck, 2 PEL, 3 Python
+ *   bits 9-20  ctxDepth     brace depth of the context block
+ *   bits 21-31 depth        open column-0 '{' count
  * </pre>
  */
 public final class MdlLexer extends Lexer {
@@ -48,20 +49,22 @@ public final class MdlLexer extends Lexer {
     private static final int PENDING_BLK = 8;
     private static final int PENDING_PEL = 1 << 4;
     private static final int PENDING_PY = 1 << 5;
-    private static final int CTX_SHIFT = 6;
+    private static final int PREV_WAS_VIEW = 1 << 6;
+    private static final int CTX_SHIFT = 7;
     private static final int CTX_MASK = 0x3;
     private static final int CTX_NONE = 0;
     private static final int CTX_CIRC = 1;
     private static final int CTX_PEL = 2;
     private static final int CTX_PY = 3;
-    private static final int CTX_DEPTH_SHIFT = 8;
-    private static final int DEPTH_SHIFT = 20;
+    private static final int CTX_DEPTH_SHIFT = 9;
+    private static final int DEPTH_SHIFT = 21;
     private static final int MASK = 0x0FFF;
 
     private static final Set<String> KEYWORDS = new HashSet<>(Arrays.asList(
             "LINK", "list", "element", "param", "fullprecision", "View",
             "dataset", "datasize", "type", "member",
-            "BLKEDIT", "TABLE", "HYPTABLE", "data", "circuitdeck", "OPTIMEDIT",
+            "BLKEDIT", "TABLE", "HYPTABLE", "PSTABLE", "CNTABLE", "data",
+            "circuitdeck", "OPTIMEDIT", "PLOTOPTIONS", "ENDPLOTOPTIONS",
             "__iccapDataBlockEnd"));
     private static final Set<String> LINK_KINDS = new HashSet<>(Arrays.asList(
             "MODEL", "DUT", "DAT", "SWEEP", "OUT", "XFORM", "PLOT", "MACRO",
@@ -84,7 +87,11 @@ public final class MdlLexer extends Lexer {
             "GET_DATASET", "ICCAP_FUNC", "USERC_num_of_points", "SIZEOF",
             "FLOOR", "ABS", "MAG", "SIZE", "REAL", "IMAG", "NOT", "AND", "OR",
             "SIN", "COS", "EXP", "LOG", "SQRT", "TAN", "ATAN", "POW", "MIN",
-            "MAX", "MOD", "TWOPORT", "PI", "2PI", "J"));
+            "MAX", "MOD", "TWOPORT", "PI", "2PI", "J",
+            // macro/Program statements seen in real decks
+            "UPDATE_AUTO", "UPDATE_EXPLICIT", "SMOOTH", "WORKDIR", "COLUMN_MAP",
+            "SAVGOL_WINDOW", "SAVGOL_POLY", "SAVGOL2D_SIZE", "OUTLIERS",
+            "OUTPUT", "INPUT", "COMPLEX", "MATRIX", "DATASET", "STRING"));
     private static final Set<String> PEL_CONSTS = new HashSet<>(Arrays.asList(
             "PI", "2PI", "J"));
 
@@ -98,6 +105,7 @@ public final class MdlLexer extends Lexer {
     // decoded state, valid for the current token start at the beginning of scanToken()
     private boolean atLineStart;
     private boolean prevWasLink;
+    private boolean prevWasView;
     private boolean pendingCirc;
     private boolean pendingBlk;
     private boolean pendingPel;
@@ -295,6 +303,8 @@ public final class MdlLexer extends Lexer {
                 myTokenType = MdlTokenTypes.IDENTIFIER;
             } else if (atStart && ("LINK".equals(word) || KEYWORDS.contains(word))) {
                 myTokenType = MdlTokenTypes.KEYWORD;
+            } else if (prevWasView) {
+                myTokenType = MdlTokenTypes.VIEW_KIND;
             } else if (prevWasLink && LINK_KINDS.contains(word)) {
                 myTokenType = MdlTokenTypes.LINK_KIND;
             } else {
@@ -308,6 +318,7 @@ public final class MdlLexer extends Lexer {
             }
             atLineStart = false;
             prevWasLink = atStart && "LINK".equals(word);
+            prevWasView = atStart && "View".equals(word);
         } else if (c == '{') {
             p++;
             boolean structural = atColumnZero();
@@ -441,6 +452,9 @@ public final class MdlLexer extends Lexer {
         if (pendingPy) {
             state |= PENDING_PY;
         }
+        if (prevWasView) {
+            state |= PREV_WAS_VIEW;
+        }
         state |= (ctx & CTX_MASK) << CTX_SHIFT;
         state |= (ctxDepth & MASK) << CTX_DEPTH_SHIFT;
         state |= (depth & MASK) << DEPTH_SHIFT;
@@ -454,6 +468,7 @@ public final class MdlLexer extends Lexer {
         pendingBlk = (state & PENDING_BLK) != 0;
         pendingPel = (state & PENDING_PEL) != 0;
         pendingPy = (state & PENDING_PY) != 0;
+        prevWasView = (state & PREV_WAS_VIEW) != 0;
         ctx = (state >> CTX_SHIFT) & CTX_MASK;
         ctxDepth = (state >> CTX_DEPTH_SHIFT) & MASK;
         depth = (state >> DEPTH_SHIFT) & MASK;

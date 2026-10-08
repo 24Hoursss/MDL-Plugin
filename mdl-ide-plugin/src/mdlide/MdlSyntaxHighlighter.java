@@ -66,8 +66,12 @@ public final class MdlSyntaxHighlighter extends SyntaxHighlighterBase {
 
     @Override
     public TextAttributesKey @NotNull [] getTokenHighlights(IElementType tokenType) {
-        if (tokenType == MdlTokenTypes.KEYWORD || tokenType == MdlTokenTypes.LINK_KIND) {
+        if (tokenType == MdlTokenTypes.KEYWORD) {
             return KEYWORD_KEYS;
+        }
+        if (tokenType == MdlTokenTypes.LINK_KIND || tokenType == MdlTokenTypes.VIEW_KIND) {
+            // second word of LINK / View lines: distinct from the first keyword
+            return NETLIST_KEYS;
         }
         if (tokenType == MdlTokenTypes.NUMBER) {
             return NUMBER_KEYS;

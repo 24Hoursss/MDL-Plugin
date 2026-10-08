@@ -8,7 +8,7 @@
       "match": "^\\s*(LINK)\\s+(MODEL|DUT|DAT|SWEEP|OUT|XFORM|PLOT|MACRO|CIRC|TCIRC|PS|DPS)\\b",
       "captures": {
         "1": { "name": "keyword.control.mdl" },
-        "2": { "name": "keyword.control.linkkind.mdl" }
+        "2": { "name": "support.type.mdl" }
       }
     },
     {
