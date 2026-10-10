@@ -30,11 +30,12 @@ if not exist build\mdl-ide.jar (
 )
 
 echo [2/4] packing Marketplace zip ...
+rem Marketplace layout: zip root holds only lib/; plugin.xml must live inside
+rem the jar (jar building above already embeds resources\META-INF\plugin.xml).
+rem A top-level META-INF next to lib/ is rejected by the upload validator.
 if exist "dist\mdl-ide" rmdir /s /q "dist\mdl-ide"
 if not exist "dist\mdl-ide\lib" mkdir "dist\mdl-ide\lib"
 copy /y build\mdl-ide.jar "dist\mdl-ide\lib\mdl-ide.jar" >nul
-if not exist "dist\mdl-ide\META-INF" mkdir "dist\mdl-ide\META-INF"
-copy /y resources\META-INF\plugin.xml "dist\mdl-ide\META-INF\plugin.xml" >nul
 powershell -NoProfile -Command "Compress-Archive -Path 'dist\mdl-ide\*' -DestinationPath '%PLUGIN_ZIP%' -Force"
 if not exist "%PLUGIN_ZIP%" (
     echo FAIL: zip not produced
