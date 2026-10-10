@@ -2,7 +2,6 @@ package mdlide;
 
 import com.intellij.lexer.Lexer;
 import com.intellij.lexer.LexerPosition;
-import com.intellij.lexer.LexerPositionImpl;
 import com.intellij.psi.TokenType;
 import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
@@ -164,12 +163,34 @@ public final class MdlLexer extends Lexer {
 
     @Override
     public @NotNull LexerPosition getCurrentPosition() {
-        return new LexerPositionImpl(myOffset, myStateAtTokenStart);
+        // LexerPositionImpl is internal API; the interface is public, so a tiny
+        // own implementation keeps the same offset+state semantics.
+        return new Position(myOffset, myStateAtTokenStart);
     }
 
     @Override
     public void restore(@NotNull LexerPosition position) {
         start(myBuffer, position.getOffset(), myEnd, position.getState());
+    }
+
+    private static final class Position implements LexerPosition {
+        private final int myOffset;
+        private final int myState;
+
+        Position(int offset, int state) {
+            myOffset = offset;
+            myState = state;
+        }
+
+        @Override
+        public int getOffset() {
+            return myOffset;
+        }
+
+        @Override
+        public int getState() {
+            return myState;
+        }
     }
 
     /** Whether the lexer state was inside a circuitdeck body. */

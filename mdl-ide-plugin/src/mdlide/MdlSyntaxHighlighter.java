@@ -114,6 +114,6 @@ public final class MdlSyntaxHighlighter extends SyntaxHighlighterBase {
         if (tokenType == MdlTokenTypes.OPERATION) {
             return OPERATION_KEYS;
         }
-        return EMPTY;
+        return new TextAttributesKey[0];
     }
 }

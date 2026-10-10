@@ -333,8 +333,10 @@ function checkOptimize(document, from, to, headerLine, add) {
     const inputFirst = new Map();
     let pendingParam = false;
     let inParam = false;
+    let leafParam = false;
     let pendingInput = false;
     let inInput = false;
+    let leafInput = false;
     let subDepth = 0;
     let paramHeader = -1;
     let inputHeader = -1;
@@ -350,6 +352,19 @@ function checkOptimize(document, from, to, headerLine, add) {
             pendingInput = true;
             inputHeader = line;
             continue;
+        }
+        // Old-format leaf form: `TABLE "..."` header followed directly by
+        // element rows (no brace block).  Valid deck form -- collect and do
+        // not demand a sentinel row.
+        if (pendingParam && ELEMENT_RE.exec(text)) {
+            inParam = true;
+            leafParam = true;
+            pendingParam = false;
+        }
+        if (pendingInput && ELEMENT_RE.exec(text)) {
+            inInput = true;
+            leafInput = true;
+            pendingInput = false;
         }
         if (trimmed === '{' && text[0] === '{') {
             subDepth++;
@@ -379,7 +394,17 @@ function checkOptimize(document, from, to, headerLine, add) {
             continue;
         }
         const m = ELEMENT_RE.exec(text);
-        if (!m) continue;
+        if (!m) {
+            if (leafParam) {
+                leafParam = false;
+                inParam = false;
+            }
+            if (leafInput) {
+                leafInput = false;
+                inInput = false;
+            }
+            continue;
+        }
         const idx = parseInt(m[1], 10);
         if (inParam) {
             if (!rows.has(idx)) rows.set(idx, new Map());
@@ -391,10 +416,14 @@ function checkOptimize(document, from, to, headerLine, add) {
             if (!inputFirst.has(idx)) inputFirst.set(idx, line);
         }
     }
-    checkSentinel(document, paramHeader, headerLine, first, rows, 'Name',
-        'OPTIMEDIT Param Table has no empty Name sentinel row', add);
-    checkSentinel(document, inputHeader, headerLine, inputFirst, inputs, 'Target',
-        'OPTIMEDIT Input Table has no empty Target sentinel row', add);
+    if (!leafParam) {
+        checkSentinel(document, paramHeader, headerLine, first, rows, 'Name',
+            'OPTIMEDIT Param Table has no empty Name sentinel row', add);
+    }
+    if (!leafInput) {
+        checkSentinel(document, inputHeader, headerLine, inputFirst, inputs, 'Target',
+            'OPTIMEDIT Input Table has no empty Target sentinel row', add);
+    }
     for (const [idx, row] of rows) {
         const use = (row.get('Use') || 'No').trim().toLowerCase();
         if (use !== 'yes' && use !== 'true') continue;

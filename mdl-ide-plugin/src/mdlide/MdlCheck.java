@@ -229,8 +229,10 @@ public final class MdlCheck {
         Map<Integer, Integer> inputFirstLine = new HashMap<>();
         boolean pendingParam = false;
         boolean inParam = false;
+        boolean leafParam = false;
         boolean pendingInput = false;
         boolean inInput = false;
+        boolean leafInput = false;
         int subDepth = 0;
         int paramHeader = -1;
         int inputHeader = -1;
@@ -246,6 +248,19 @@ public final class MdlCheck {
                 pendingInput = true;
                 inputHeader = li;
                 continue;
+            }
+            // Old-format leaf form: `TABLE "..."` header followed directly by
+            // element rows (no brace block).  Valid deck form -- collect and
+            // do not demand a sentinel row.
+            if (pendingParam && ELEMENT_ROW.matcher(trimmed).matches()) {
+                inParam = true;
+                leafParam = true;
+                pendingParam = false;
+            }
+            if (pendingInput && ELEMENT_ROW.matcher(trimmed).matches()) {
+                inInput = true;
+                leafInput = true;
+                pendingInput = false;
             }
             if (trimmed.equals("{") && line.startsWith("{")) {
                 subDepth++;
@@ -276,6 +291,14 @@ public final class MdlCheck {
             }
             Matcher m = ELEMENT_ROW.matcher(trimmed);
             if (!m.matches()) {
+                if (leafParam) {
+                    leafParam = false;
+                    inParam = false;
+                }
+                if (leafInput) {
+                    leafInput = false;
+                    inInput = false;
+                }
                 continue;
             }
             int idx = Integer.parseInt(m.group(1));
@@ -287,10 +310,14 @@ public final class MdlCheck {
                 inputFirstLine.putIfAbsent(idx, li);
             }
         }
-        checkSentinel(text, ranges, paramHeader, headerLine, firstLine, rows, "Name",
-                "OPTIMEDIT Param Table has no empty Name sentinel row", issues);
-        checkSentinel(text, ranges, inputHeader, headerLine, inputFirstLine, inputs, "Target",
-                "OPTIMEDIT Input Table has no empty Target sentinel row", issues);
+        if (!leafParam) {
+            checkSentinel(text, ranges, paramHeader, headerLine, firstLine, rows, "Name",
+                    "OPTIMEDIT Param Table has no empty Name sentinel row", issues);
+        }
+        if (!leafInput) {
+            checkSentinel(text, ranges, inputHeader, headerLine, inputFirstLine, inputs, "Target",
+                    "OPTIMEDIT Input Table has no empty Target sentinel row", issues);
+        }
         for (Map.Entry<Integer, Map<String, String>> e : rows.entrySet()) {
             Map<String, String> row = e.getValue();
             String use = row.getOrDefault("Use", "No").trim();

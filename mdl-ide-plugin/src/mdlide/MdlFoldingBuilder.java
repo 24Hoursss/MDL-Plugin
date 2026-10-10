@@ -103,7 +103,7 @@ public final class MdlFoldingBuilder extends FoldingBuilderEx {
             }
             lineStart = lineEnd + 1;
         }
-        return folds.toArray(FoldingDescriptor.EMPTY);
+        return folds.toArray(FoldingDescriptor.EMPTY_ARRAY);
     }
 
     /** The line contains only the brace itself (trailing spaces already trimmed). */
