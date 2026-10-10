@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>mdlide.iccap-mdl</id>
     <name>IC-CAP MDL</name>
-    <vendor>local</vendor>
+    <vendor>24Hoursss</vendor>
     <version>1.0.0</version>
 
     <idea-version since-build="261" until-build="261.*"/>
