@@ -76,6 +76,9 @@ in the Problems panel / squiggles as you type (debounced):
 - `param` / `fullprecision` pairing
 - Optimize `Use=Yes` rows: numeric Min and Max required, no `!`-prefixed
   unresolved names (Stored is intentionally not checked)
+- empty sentinel rows: the last Variable Table row and the last Optimize
+  Param / Input Table row must be blank (empty `Name` / `Target`) — IC-CAP
+  needs that trailing empty row to import the table
 
 Command **MDL: Run Deck Checks** (or `set SKIP_PUBLISH=1` + the checks pass
 message) summarizes errors/warnings for the active file.

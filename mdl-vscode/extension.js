@@ -154,7 +154,8 @@ function findHeaderLine(document, braceLine) {
 /**
  * Deck-level sanity checks (same rules as the PyCharm plugin's MdlCheck):
  * column-0 brace balance, paren/bracket/inline-brace pairing, string closure,
- * param/fullprecision pairing, Optimize Use=Yes bounds.
+ * param/fullprecision pairing, Optimize Use=Yes bounds, empty sentinel rows
+ * on Variable Table / Optimize Param and Input tables.
  * Returns [{line, c0, c1, error, msg}].
  */
 function mdCheck(document) {
@@ -264,7 +265,8 @@ function matchPair(stack, closeChar, line, col, add) {
     }
 }
 
-/** param/fullprecision pairing + Optimize Use=Yes bounds (same rules as the IDE plugin). */
+/** param/fullprecision pairing + Optimize Use=Yes bounds + empty sentinel rows
+ * (a TABLE needs an empty trailing row for IC-CAP to import it). */
 function checkTables(document, add) {
     const params = new Map();
     const fullprec = new Map();
@@ -279,9 +281,13 @@ function checkTables(document, add) {
         }
         if (trimmed === '}' && text[0] === '}') {
             const open = stack.pop();
-            if (open && open.header >= 0
-                    && document.lineAt(open.header).text.trim() === 'OPTIMEDIT') {
-                checkOptimize(document, open.open + 1, line, add);
+            if (open && open.header >= 0) {
+                const header = document.lineAt(open.header).text.trim();
+                if (header === 'OPTIMEDIT') {
+                    checkOptimize(document, open.open + 1, line, open.header, add);
+                } else if (header.startsWith('TABLE "Variable Table"')) {
+                    checkVariableTable(document, open.open + 1, line, open.header, add);
+                }
             }
             continue;
         }
@@ -318,19 +324,31 @@ function quotedName(line, kind) {
 
 const ELEMENT_RE = /^\s*element\s+(\d+)\s+"([^"]+)"\s+"([^"]*)"/;
 
-function checkOptimize(document, from, to, add) {
+function checkOptimize(document, from, to, headerLine, add) {
     // Multiple tables ("More", "Input Table", "Param Table", "Options Table")
     // share the same row indices; only the Param Table rows carry the bounds.
     const rows = new Map();
     const first = new Map();
+    const inputs = new Map();
+    const inputFirst = new Map();
     let pendingParam = false;
     let inParam = false;
+    let pendingInput = false;
+    let inInput = false;
     let subDepth = 0;
+    let paramHeader = -1;
+    let inputHeader = -1;
     for (let line = from; line < to; line++) {
         const text = document.lineAt(line).text;
         const trimmed = text.trimEnd();
         if (trimmed.startsWith('TABLE "Param Table"')) {
             pendingParam = true;
+            paramHeader = line;
+            continue;
+        }
+        if (trimmed.startsWith('TABLE "Input Table"')) {
+            pendingInput = true;
+            inputHeader = line;
             continue;
         }
         if (trimmed === '{' && text[0] === '{') {
@@ -339,27 +357,44 @@ function checkOptimize(document, from, to, add) {
                 inParam = true;
                 pendingParam = false;
             }
+            if (pendingInput) {
+                inInput = true;
+                pendingInput = false;
+            }
             continue;
         }
         if (trimmed === '}' && text[0] === '}') {
             if (inParam && subDepth === 1) {
                 inParam = false;
             }
+            if (inInput && subDepth === 1) {
+                inInput = false;
+            }
             if (subDepth > 0) {
                 subDepth--;
             }
             continue;
         }
-        if (!inParam) {
+        if (!inParam && !inInput) {
             continue;
         }
         const m = ELEMENT_RE.exec(text);
         if (!m) continue;
         const idx = parseInt(m[1], 10);
-        if (!rows.has(idx)) rows.set(idx, new Map());
-        rows.get(idx).set(m[2], m[3]);
-        if (!first.has(idx)) first.set(idx, line);
+        if (inParam) {
+            if (!rows.has(idx)) rows.set(idx, new Map());
+            rows.get(idx).set(m[2], m[3]);
+            if (!first.has(idx)) first.set(idx, line);
+        } else {
+            if (!inputs.has(idx)) inputs.set(idx, new Map());
+            inputs.get(idx).set(m[2], m[3]);
+            if (!inputFirst.has(idx)) inputFirst.set(idx, line);
+        }
     }
+    checkSentinel(document, paramHeader, headerLine, first, rows, 'Name',
+        'OPTIMEDIT Param Table has no empty Name sentinel row', add);
+    checkSentinel(document, inputHeader, headerLine, inputFirst, inputs, 'Target',
+        'OPTIMEDIT Input Table has no empty Target sentinel row', add);
     for (const [idx, row] of rows) {
         const use = (row.get('Use') || 'No').trim().toLowerCase();
         if (use !== 'yes' && use !== 'true') continue;
@@ -375,6 +410,56 @@ function checkOptimize(document, from, to, add) {
         if (min === null || max === null) {
             add(line, 0, 1, true, "Use=Yes: row '" + name + "' needs numeric Min and Max");
         }
+    }
+}
+
+/** The table's last row must be the empty sentinel: the key field (Name /
+ * Target) is blank. Mirrors mdl_edit.py verify()'s sentinel rule. */
+function checkSentinel(document, headerLine, fallbackLine, first, rows, key, message, add) {
+    const anchor = headerLine >= 0 ? headerLine : fallbackLine;
+    if (rows.size === 0) {
+        add(anchor, 0, 1, true, message);
+        return;
+    }
+    let last = -1;
+    for (const idx of rows.keys()) if (idx > last) last = idx;
+    if ((rows.get(last).get(key) || '').trim() !== '') {
+        add(first.get(last), 0, 1, true, message);
+    }
+}
+
+/** Variable Table rows are Name/Value pairs; the trailing sentinel row is
+ * `element N "Name" ""` (IC-CAP drops the table's last row on import). */
+function checkVariableTable(document, from, to, headerLine, add) {
+    const nameLine = new Map();  // row -> last Name line
+    const nameValue = new Map();
+    let subDepth = 0;
+    for (let line = from; line < to; line++) {
+        const text = document.lineAt(line).text;
+        const trimmed = text.trimEnd();
+        if (trimmed === '{' && text[0] === '{') {
+            subDepth++;
+            continue;
+        }
+        if (trimmed === '}' && text[0] === '}') {
+            if (subDepth > 0) subDepth--;
+            continue;
+        }
+        if (subDepth !== 0) continue;
+        const m = ELEMENT_RE.exec(text);
+        if (!m || m[2] !== 'Name') continue;
+        const idx = parseInt(m[1], 10);
+        nameLine.set(idx, line);
+        nameValue.set(idx, m[3]);
+    }
+    if (nameLine.size === 0) {
+        add(headerLine, 0, 1, true, 'Variable Table has no empty Name sentinel row');
+        return;
+    }
+    let last = -1;
+    for (const idx of nameLine.keys()) if (idx > last) last = idx;
+    if (nameValue.get(last).trim() !== '') {
+        add(nameLine.get(last), 0, 1, true, 'Variable Table has no empty Name sentinel row');
     }
 }
 

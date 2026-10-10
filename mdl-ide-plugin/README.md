@@ -141,6 +141,9 @@ An annotator (`MdlAnnotator` / `MdlCheck`) flags problems with red squiggles
   (agent rule: always update both) and vice versa.
 - **Optimize Use=Yes rows**: numeric Min and Max required; a `!`-prefixed
   unresolved name cannot be used. Stored is intentionally not checked.
+- **Empty sentinel rows**: the last row of the Variable Table and of an
+  Optimize's Param / Input Table must be blank (empty `Name` / `Target`) —
+  IC-CAP needs that trailing empty row to import the table.
 
 Run from the CLI: `mdlide.test.CheckDump` (see tools-src) or
 `MdlCheck.check(String)` — the same logic is exposed headlessly.

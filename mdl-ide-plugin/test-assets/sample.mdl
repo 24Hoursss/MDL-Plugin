@@ -5,6 +5,8 @@ TABLE "Variable Table" "790.004"
 {
 element 0 "Name" "SIMULATOR"
 element 0 "Value" "hpeesofsim"
+element 1 "Name" ""
+element 1 "Value" ""
 }
 }
 LINK CIRC "Circuit" "790.004"

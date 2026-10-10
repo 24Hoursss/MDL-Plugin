@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
@@ -131,7 +132,8 @@ public final class MdlCheck {
         }
     }
 
-    /** param/fullprecision pairing + Optimize Use=Yes bounds. */
+    /** param/fullprecision pairing + Optimize Use=Yes bounds + empty sentinel
+     * rows (a TABLE needs an empty trailing row for IC-CAP to import it). */
     private static void checkTables(String text, List<Issue> issues) {
         List<int[]> ranges = lineRanges(text);
         Map<String, Integer> params = new HashMap<>();   // name -> line index
@@ -151,7 +153,10 @@ public final class MdlCheck {
                     String header = text.substring(ranges.get(open[1])[0],
                             ranges.get(open[1])[1]).trim();
                     if (header.equals("OPTIMEDIT")) {
-                        checkOptimize(text, ranges, open[0] + 1, li, issues);
+                        checkOptimize(text, ranges, open[0] + 1, li, open[1], issues);
+                    } else if (header.startsWith("TABLE \"Variable Table\"")) {
+                        checkVariableTable(text, ranges, open[0] + 1, li,
+                                open[1], issues);
                     }
                 }
                 continue;
@@ -213,20 +218,33 @@ public final class MdlCheck {
     }
 
     private static void checkOptimize(String text, List<int[]> ranges,
-                                      int fromLine, int toLineExclusive, List<Issue> issues) {
+                                      int fromLine, int toLineExclusive,
+                                      int headerLine, List<Issue> issues) {
         // The Optimize editor holds several tables ("More", "Input Table",
         // "Param Table", "Options Table") that share the same row indices;
         // only the Param Table rows carry Use/Name/Min/Max/Stored.
         Map<Integer, Map<String, String>> rows = new HashMap<>();
         Map<Integer, Integer> firstLine = new HashMap<>();
+        Map<Integer, Map<String, String>> inputs = new HashMap<>();
+        Map<Integer, Integer> inputFirstLine = new HashMap<>();
         boolean pendingParam = false;
         boolean inParam = false;
+        boolean pendingInput = false;
+        boolean inInput = false;
         int subDepth = 0;
+        int paramHeader = -1;
+        int inputHeader = -1;
         for (int li = fromLine; li < toLineExclusive; li++) {
             String line = text.substring(ranges.get(li)[0], ranges.get(li)[1]);
             String trimmed = line.trim();
             if (trimmed.startsWith("TABLE \"Param Table\"")) {
                 pendingParam = true;
+                paramHeader = li;
+                continue;
+            }
+            if (trimmed.startsWith("TABLE \"Input Table\"")) {
+                pendingInput = true;
+                inputHeader = li;
                 continue;
             }
             if (trimmed.equals("{") && line.startsWith("{")) {
@@ -235,27 +253,44 @@ public final class MdlCheck {
                     inParam = true;
                     pendingParam = false;
                 }
+                if (pendingInput) {
+                    inInput = true;
+                    pendingInput = false;
+                }
                 continue;
             }
             if (trimmed.equals("}") && line.startsWith("}")) {
                 if (inParam && subDepth == 1) {
                     inParam = false;
                 }
+                if (inInput && subDepth == 1) {
+                    inInput = false;
+                }
                 if (subDepth > 0) {
                     subDepth--;
                 }
                 continue;
             }
-            if (!inParam) {
+            if (!inParam && !inInput) {
                 continue;
             }
             Matcher m = ELEMENT_ROW.matcher(trimmed);
-            if (m.matches()) {
-                int idx = Integer.parseInt(m.group(1));
+            if (!m.matches()) {
+                continue;
+            }
+            int idx = Integer.parseInt(m.group(1));
+            if (inParam) {
                 rows.computeIfAbsent(idx, k -> new HashMap<>()).put(m.group(2), m.group(3));
                 firstLine.putIfAbsent(idx, li);
+            } else {
+                inputs.computeIfAbsent(idx, k -> new HashMap<>()).put(m.group(2), m.group(3));
+                inputFirstLine.putIfAbsent(idx, li);
             }
         }
+        checkSentinel(text, ranges, paramHeader, headerLine, firstLine, rows, "Name",
+                "OPTIMEDIT Param Table has no empty Name sentinel row", issues);
+        checkSentinel(text, ranges, inputHeader, headerLine, inputFirstLine, inputs, "Target",
+                "OPTIMEDIT Input Table has no empty Target sentinel row", issues);
         for (Map.Entry<Integer, Map<String, String>> e : rows.entrySet()) {
             Map<String, String> row = e.getValue();
             String use = row.getOrDefault("Use", "No").trim();
@@ -279,6 +314,67 @@ public final class MdlCheck {
                 add(issues, true, offset, 1,
                         "Use=Yes: row '" + name + "' needs numeric Min and Max");
             }
+        }
+    }
+
+    /** Variable Table rows are Name/Value pairs; the trailing sentinel row is
+     * `element N "Name" ""` (IC-CAP drops the table's last row on import). */
+    private static void checkVariableTable(String text, List<int[]> ranges,
+                                           int fromLine, int toLineExclusive,
+                                           int headerLine, List<Issue> issues) {
+        Map<Integer, Integer> nameLine = new HashMap<>(); // row -> last Name line
+        Map<Integer, String> nameValue = new HashMap<>();
+        int subDepth = 0;
+        for (int li = fromLine; li < toLineExclusive; li++) {
+            String line = text.substring(ranges.get(li)[0], ranges.get(li)[1]);
+            String trimmed = line.trim();
+            if (trimmed.equals("{") && line.startsWith("{")) {
+                subDepth++;
+                continue;
+            }
+            if (trimmed.equals("}") && line.startsWith("}")) {
+                if (subDepth > 0) {
+                    subDepth--;
+                }
+                continue;
+            }
+            if (subDepth != 0) {
+                continue;
+            }
+            Matcher m = ELEMENT_ROW.matcher(trimmed);
+            if (m.matches() && m.group(2).equals("Name")) {
+                int row = Integer.parseInt(m.group(1));
+                nameLine.put(row, li);
+                nameValue.put(row, m.group(3));
+            }
+        }
+        if (nameLine.isEmpty()) {
+            add(issues, true, ranges.get(headerLine)[0], 1,
+                    "Variable Table has no empty Name sentinel row");
+            return;
+        }
+        int last = Collections.max(nameLine.keySet());
+        if (!nameValue.get(last).trim().isEmpty()) {
+            add(issues, true, ranges.get(nameLine.get(last))[0], 1,
+                    "Variable Table has no empty Name sentinel row");
+        }
+    }
+
+    /** The table's last row must be the empty sentinel: the key field (Name /
+     * Target) is blank. Mirrors mdl_edit.py verify()'s sentinel rule. */
+    private static void checkSentinel(String text, List<int[]> ranges, int headerLine,
+                                      int fallbackLine,
+                                      Map<Integer, Integer> firstLine,
+                                      Map<Integer, Map<String, String>> rows,
+                                      String key, String message, List<Issue> issues) {
+        int anchor = headerLine >= 0 ? headerLine : fallbackLine;
+        if (rows.isEmpty()) {
+            add(issues, true, ranges.get(anchor)[0], 1, message);
+            return;
+        }
+        int last = Collections.max(rows.keySet());
+        if (!rows.get(last).getOrDefault(key, "").trim().isEmpty()) {
+            add(issues, true, ranges.get(firstLine.get(last))[0], 1, message);
         }
     }
 
