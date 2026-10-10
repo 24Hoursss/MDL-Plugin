@@ -141,6 +141,10 @@ An annotator (`MdlAnnotator` / `MdlCheck`) flags problems with red squiggles
   (agent rule: always update both) and vice versa.
 - **Optimize Use=Yes rows**: numeric Min and Max required; a `!`-prefixed
   unresolved name cannot be used. Stored is intentionally not checked.
+- **Legacy leaf optimizer tables**: an Optimize `TABLE "Param Table"` header
+  followed directly by `element` rows is not canonical — IC-CAP 2025 saves
+  open the table with `{` on the next line (`verify` in iccap-mdl-edit and
+  `checkOptimize` diagnose this as well)
 - **Empty sentinel rows**: the last row of the Variable Table and of an
   Optimize's Param / Input Table must be blank (empty `Name` / `Target`) —
   IC-CAP needs that trailing empty row to import the table.

@@ -27,7 +27,8 @@ Both implement the same feature set so the two editors agree on a deck:
 - completion: line-start keywords, LINK kinds, `#` directives, `$` refs,
   netlist keywords inside `circuitdeck`
 - checks: brace/bracket/paren balance, unterminated strings,
-  param/fullprecision pairing, Optimize `Use=Yes` bounds, empty sentinel rows
+  param/fullprecision pairing, Optimize `Use=Yes` bounds, empty sentinel rows,
+  legacy leaf optimizer tables
   on Variable Table / Optimize Param and Input tables
 
 Build/install/publish per plugin: see `mdl-ide-plugin/README.md`

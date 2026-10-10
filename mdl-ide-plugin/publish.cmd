@@ -14,7 +14,7 @@ rem Safe test without publishing: set SKIP_PUBLISH=1
 cd /d "%~dp0"
 set "IDE=C:\Program Files\JetBrains\PyCharm 2026.1.2"
 set "JAVAC=%IDE%\jbr\bin\javac.exe"
-set "PLUGIN_ZIP=dist\mdl-ide-1.0.1.zip"
+set "PLUGIN_ZIP=dist\mdl-ide-1.0.2.zip"
 
 echo [1/4] building plugin jar ...
 if not exist build\classes mkdir build\classes

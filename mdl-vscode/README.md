@@ -79,6 +79,10 @@ in the Problems panel / squiggles as you type (debounced):
 - empty sentinel rows: the last Variable Table row and the last Optimize
   Param / Input Table row must be blank (empty `Name` / `Target`) — IC-CAP
   needs that trailing empty row to import the table
+- legacy leaf optimizer tables: an Optimize `TABLE "Param Table"` (or
+  `TABLE "Input Table"`) header followed directly by `element` rows is
+  reported as legacy leaf form — canonical IC-CAP 2025 saves open the
+  table with `{` on the next line
 
 Command **MDL: Run Deck Checks** (or `set SKIP_PUBLISH=1` + the checks pass
 message) summarizes errors/warnings for the active file.

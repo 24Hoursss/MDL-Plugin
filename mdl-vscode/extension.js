@@ -391,10 +391,20 @@ function checkOptimize(document, from, to, headerLine, add) {
             if (!inputFirst.has(idx)) inputFirst.set(idx, line);
         }
     }
-    checkSentinel(document, paramHeader, headerLine, first, rows, 'Name',
-        'OPTIMEDIT Param Table has no empty Name sentinel row', add);
-    checkSentinel(document, inputHeader, headerLine, inputFirst, inputs, 'Target',
-        'OPTIMEDIT Input Table has no empty Target sentinel row', add);
+    if (pendingParam) {
+        add(paramHeader, 0, 1, true,
+            "Optimize Param Table is legacy leaf form: TABLE header must be followed by '{' (canonical IC-CAP 2025 save)");
+    } else {
+        checkSentinel(document, paramHeader, headerLine, first, rows, 'Name',
+            'OPTIMEDIT Param Table has no empty Name sentinel row', add);
+    }
+    if (pendingInput) {
+        add(inputHeader, 0, 1, true,
+            "Optimize Input Table is legacy leaf form: TABLE header must be followed by '{' (canonical IC-CAP 2025 save)");
+    } else {
+        checkSentinel(document, inputHeader, headerLine, inputFirst, inputs, 'Target',
+            'OPTIMEDIT Input Table has no empty Target sentinel row', add);
+    }
     for (const [idx, row] of rows) {
         const use = (row.get('Use') || 'No').trim().toLowerCase();
         if (use !== 'yes' && use !== 'true') continue;

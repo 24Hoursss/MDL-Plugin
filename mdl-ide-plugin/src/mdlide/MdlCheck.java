@@ -287,10 +287,22 @@ public final class MdlCheck {
                 inputFirstLine.putIfAbsent(idx, li);
             }
         }
-        checkSentinel(text, ranges, paramHeader, headerLine, firstLine, rows, "Name",
-                "OPTIMEDIT Param Table has no empty Name sentinel row", issues);
-        checkSentinel(text, ranges, inputHeader, headerLine, inputFirstLine, inputs, "Target",
-                "OPTIMEDIT Input Table has no empty Target sentinel row", issues);
+        if (pendingParam) {
+            add(issues, true, ranges.get(paramHeader)[0], 1,
+                    "Optimize Param Table is legacy leaf form: TABLE header must be followed by '{' "
+                            + "(canonical IC-CAP 2025 save)");
+        } else {
+            checkSentinel(text, ranges, paramHeader, headerLine, firstLine, rows, "Name",
+                    "OPTIMEDIT Param Table has no empty Name sentinel row", issues);
+        }
+        if (pendingInput) {
+            add(issues, true, ranges.get(inputHeader)[0], 1,
+                    "Optimize Input Table is legacy leaf form: TABLE header must be followed by '{' "
+                            + "(canonical IC-CAP 2025 save)");
+        } else {
+            checkSentinel(text, ranges, inputHeader, headerLine, inputFirstLine, inputs, "Target",
+                    "OPTIMEDIT Input Table has no empty Target sentinel row", issues);
+        }
         for (Map.Entry<Integer, Map<String, String>> e : rows.entrySet()) {
             Map<String, String> row = e.getValue();
             String use = row.getOrDefault("Use", "No").trim();
