@@ -12,38 +12,38 @@ rem   JB_MARKETPLACE_TOKEN  personal access token from the Marketplace account p
 rem Run:   set JB_PLUGIN_ID=<id>  &  set JB_MARKETPLACE_TOKEN=<token>  then  publish.cmd
 rem Safe test without publishing: set SKIP_PUBLISH=1
 cd /d "%~dp0"
-set "IDE=C:\Program Files\JetBrains\PyCharm 2026.1.2"
+set "IDE=C:\Program Files\JetBrains\PyCharm 2026.2.3"
+if defined MDL_IDE set "IDE=%MDL_IDE%"
 set "JAVAC=%IDE%\jbr\bin\javac.exe"
-set "PLUGIN_ZIP=dist\mdl-ide-1.0.3.zip"
+set "PY=py -3"
 
 echo [1/4] building plugin jar ...
-if not exist build\classes mkdir build\classes
+rem wipe stale classes: a removed source file would otherwise stay in the jar
+if exist build\classes rmdir /s /q build\classes
+mkdir build\classes
 "%JAVAC%" -encoding UTF-8 --release 21 -cp "%IDE%\lib\*" -d build\classes src\mdlide\*.java
 if errorlevel 1 (
     echo FAIL: compile error
     exit /b 1
 )
-jar cf build\mdl-ide.jar -C build\classes . -C resources .
-if not exist build\mdl-ide.jar (
-    echo FAIL: jar not produced
+
+echo [2/4] packing jar + Marketplace zip ...
+rem Marketplace layout: zip root holds only lib/; plugin.xml must live inside
+rem the jar. A top-level META-INF next to lib/ is rejected by the upload
+rem validator. pack.py also embeds resources\META-INF\plugin.xml.
+%PY% pack.py --zip
+if errorlevel 1 (
+    echo FAIL: pack error
     exit /b 1
 )
-
-echo [2/4] packing Marketplace zip ...
-rem Marketplace layout: zip root holds only lib/; plugin.xml must live inside
-rem the jar (jar building above already embeds resources\META-INF\plugin.xml).
-rem A top-level META-INF next to lib/ is rejected by the upload validator.
-if exist "dist\mdl-ide" rmdir /s /q "dist\mdl-ide"
-if not exist "dist\mdl-ide\lib" mkdir "dist\mdl-ide\lib"
-copy /y build\mdl-ide.jar "dist\mdl-ide\lib\mdl-ide.jar" >nul
-powershell -NoProfile -Command "Compress-Archive -Path 'dist\mdl-ide\*' -DestinationPath '%PLUGIN_ZIP%' -Force"
-if not exist "%PLUGIN_ZIP%" (
+for %%f in (dist\mdl-ide-*.zip) do set "PLUGIN_ZIP=%%f"
+if not defined PLUGIN_ZIP (
     echo FAIL: zip not produced
     exit /b 1
 )
 
 echo [3/4] validating zip ...
-python validate_plugin.py "%PLUGIN_ZIP%"
+%PY% validate_plugin.py "%PLUGIN_ZIP%"
 if errorlevel 1 exit /b 1
 echo manual install in PyCharm: Settings -^> Plugins -^> Gear -^> Install Plugin from Disk -^> %PLUGIN_ZIP%
 

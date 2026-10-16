@@ -1,11 +1,14 @@
 # IC-CAP MDL Plugin (PyCharm)
 
 Syntax highlighting, code folding and brace matching for Keysight IC-CAP `.mdl`
-(MDIF model definition) files in PyCharm 2026.1.
+(MDIF model definition) files in PyCharm 2026.1 - 2026.2
+(`since-build=261 until-build=262.*`).
 
 ## Features
 
-- **File type**: `*.mdl` files open as "IC-CAP MDL".
+- **File type**: `*.mdl` files open as "IC-CAP MDL". Registered by the
+  `<fileType>` extension point in plugin.xml (`fieldName="INSTANCE"`); the
+  deprecated `FileTypeFactory` was dropped in 1.0.4.
 - **Highlighting**, based on the MDL grammar used by the repo's
   `iccap-mdl-edit` skill/agent (`agents/iccap-mdl-edit/mdl_edit.py`,
   `skills/iccap-mdl-edit/reference/grammar.md`):
@@ -65,15 +68,23 @@ idea.max.content.load.filesize=-1
 `-1` means unlimited (also raise the 20 MB content-load limit so big decks
 open fully). Restart PyCharm after changing it. Re-set a number (in KB) if
 you ever want to cap it again.
+
+The file is per IDE version: upgrading to PyCharm 2026.2 installs a fresh
+config dir, and this tweak has to be re-created there
+(`%APPDATA%\JetBrains\PyCharm2026.2\idea.properties`).
 - Colors follow the editor scheme (light and dark themes both work) via
   `DefaultLanguageHighlighterColors` keys; custom keys can be tweaked later
   under Settings -> Editor -> Color Scheme -> Language Defaults if desired.
 
 ## Build
 
-Prerequisites: installed PyCharm 2026.1.2 at
-`C:\Program Files\JetBrains\PyCharm 2026.1.2` (its bundled JBR supplies
-javac) and any JDK's `jar`.
+Prerequisites: an installed PyCharm whose platform the plugin is built
+against (currently 2026.2.3 at
+`C:\Program Files\JetBrains\PyCharm 2026.2.3`; its bundled JBR supplies
+javac) and Python 3 (`py -3`) for `pack.py` / `validate_plugin.py`. Override
+the IDE with `set MDL_IDE=<path>` if it lives elsewhere - the jar embeds no
+IDE path, but compiling against an older IDE keeps the bytecode within that
+release's API.
 
 ```bat
 build.bat          :: compiles, packages, copies into the user plugins dir
@@ -86,11 +97,12 @@ or from Git Bash:
 ```
 
 The build compiles `src/mdlide/*.java` against
-`<PyCharm>/lib/*` (the platform jars) with `--release 21`, packages
-`build/mdl-ide.jar` (classes + `META-INF/plugin.xml`) and copies it to:
+`<PyCharm>/lib/*` (the platform jars) with `--release 21`, packs
+`build/mdl-ide.jar` (classes + `META-INF/plugin.xml`) with `pack.py` (the JBR
+ships no `jar` tool) and copies it to:
 
 ```
-%APPDATA%\JetBrains\PyCharm2026.1\plugins\mdl-ide\lib\mdl-ide.jar
+%APPDATA%\JetBrains\PyCharm2026.2\plugins\mdl-ide\lib\mdl-ide.jar
 ```
 
 ## Install / update
@@ -105,12 +117,32 @@ file type by default (check the status bar: it shows **MDL**).
 
 ## Publish / distribute
 
+`verify.cmd` (or `./verify.sh`) is the pre-flight: it builds + packs the
+plugin and runs the **JetBrains Plugin Verifier** - the tool behind the
+Marketplace review - against the IDE builds in `IDE_DIRS`. Needs the verifier
+CLI jar and an unpacked IDE (defaults:
+`%USERPROFILE%\.jetbrains-verifier\verifier-cli-1.410-all.jar` and
+`...\ide-261` = build 261.27258.48, the one the Marketplace checks against):
+
+```bat
+verify.cmd
+set IDE_DIRS=%IDE_DIRS%;C:\Program Files\JetBrains\PyCharm 2026.2.3  &  verify.cmd
+```
+
+A run must end in `Compatible` / `OK: verifier found no problems` - the
+verifier is what flagged the deprecated `FileTypeFactory` in 1.0.3. The
+verifier CLI needs `github.com` and `plugins.jetbrains.com` reachable (it
+fetches the documented-problems list and plugin dependencies).
+
 `publish.cmd` is the one-command publish check:
 
 1. compiles the plugin (no IDE plugins-dir write, safe while PyCharm runs)
-2. packs the Marketplace distribution zip `dist\mdl-ide-1.0.0.zip`
-   (`lib/mdl-ide.jar` + `META-INF/plugin.xml` at the zip root)
-3. validates the zip (`validate_plugin.py`): structure, plugin.xml, idea-version
+2. packs the Marketplace distribution zip `dist\mdl-ide-1.0.4.zip`
+   (root holds only `lib/`, plugin.xml inside the jar; `pack.py --zip` also
+   writes `dist\verify\...-verify.zip` in the wrapper layout the verifier CLI
+   wants)
+3. validates the zip (`validate_plugin.py`): structure, plugin.xml,
+   idea-version, `<fileType>` registration (no `fileTypeFactory`)
 4. uploads to plugins.jetbrains.com if `JB_MARKETPLACE_TOKEN` and
    `JB_PLUGIN_ID` are set, else prints the exact steps needed
 
@@ -124,9 +156,25 @@ set JB_MARKETPLACE_TOKEN=<token>
 publish.cmd
 ```
 
-Or just upload `dist\mdl-ide-1.0.0.zip` manually on the plugin page's Update
+Or just upload `dist\mdl-ide-1.0.4.zip` manually on the plugin page's Update
 tab. `set SKIP_PUBLISH=1` runs steps 1-3 only. The zip can also be installed
 with Settings -> Plugins -> Gear -> Install Plugin from Disk.
+
+### Marketplace compliance (1.0.4)
+
+The 1.0.3 review flagged the plugin for the deprecated `FileTypeFactory` and
+noted that it could not be enabled/disabled without an IDE restart. Both came
+from the same extension point:
+
+- `<fileTypeFactory>` -> `<fileType name="MDL" language="MDL"
+  implementationClass="mdlide.MdlFileType" fieldName="INSTANCE"
+  extensions="mdl"/>`. The EP is declared `dynamic="true"`, so the restart
+  warning is gone, and it is the documented replacement for the deprecated
+  factory (`MdlFileType.INSTANCE` must stay named as in plugin.xml).
+- Verified locally with verifier 1.410 against `IC-261.27258.48` and
+  `PY-262.10968.92`: `Compatible`, no deprecated/internal API usages, no
+  structural findings. Compatibility was widened to `until-build="262.*"` so
+  PyCharm 2026.2 can install it.
 
 ## Deck checks (errors / warnings in the editor)
 
@@ -155,11 +203,11 @@ Run from the CLI: `mdlide.test.CheckDump` (see tools-src) or
 ## Self-test (no IDE needed)
 
 ```bash
-"C:/Program Files/JetBrains/PyCharm 2026.1.2/jbr/bin/javac.exe" \
-  -cp "build/classes;C:/Program Files/JetBrains/PyCharm 2026.1.2/lib/*" \
+"C:/Program Files/JetBrains/PyCharm 2026.2.3/jbr/bin/javac.exe" \
+  -cp "build/classes;C:/Program Files/JetBrains/PyCharm 2026.2.3/lib/*" \
   -d build/test tools-src/LexerDump.java
-"C:/Program Files/JetBrains/PyCharm 2026.1.2/jbr/bin/java.exe" \
-  -cp "build/test;build/classes;C:/Program Files/JetBrains/PyCharm 2026.1.2/lib/*" \
+"C:/Program Files/JetBrains/PyCharm 2026.2.3/jbr/bin/java.exe" \
+  -cp "build/test;build/classes;C:/Program Files/JetBrains/PyCharm 2026.2.3/lib/*" \
   mdlide.test.LexerDump <some.mdl> 0
 ```
 
@@ -171,8 +219,7 @@ over the whole file is the pass condition.
 ```
 src/mdlide/
   MdlLanguage.java            language definition (id MDL)
-  MdlFileType.java            *.mdl file type
-  MdlFileTypeFactory.java     registers the extension
+  MdlFileType.java            *.mdl file type (INSTANCE is named in plugin.xml)
   MdlTokenTypes.java          lexer token types
   MdlLexer.java               line-oriented lexer (column-0 brace depth state)
   MdlSyntaxHighlighter.java   token -> color mapping
@@ -184,6 +231,10 @@ src/mdlide/
 resources/META-INF/plugin.xml
 tools-src/LexerDump.java      command-line lexer self-test
 build.bat / build.sh         compile + package + install
+publish.cmd                  compile + pack Marketplace zip (+ upload)
+verify.cmd / verify.sh       JetBrains Plugin Verifier pre-flight
+pack.py                      jar + zip packing (no JDK jar tool needed)
+validate_plugin.py           structure/descriptor check for the dist zip
 ```
 
 ## Notes

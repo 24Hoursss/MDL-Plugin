@@ -38,8 +38,23 @@ def main() -> int:
             exts = [n.getAttribute("language") for n in root.getElementsByTagName("*")
                     if n.tagName.endswith("parserDefinition") and n.hasAttribute("language")]
             classes = sum(1 for n in jar_names if n.endswith(".class"))
+            # fileTypeFactory is deprecated and flagged by the Plugin Verifier;
+            # the modern registration is the <fileType> EP (dynamic).
+            legacy = root.getElementsByTagName("fileTypeFactory")
+            if legacy:
+                print("BAD: plugin.xml still declares the deprecated"
+                      " <fileTypeFactory> EP; use <fileType fieldName=.../>")
+                return 1
+            ft = root.getElementsByTagName("fileType")
+            if not ft:
+                print("BAD: plugin.xml declares no <fileType>")
+                return 1
+            ft_desc = " ".join(f'{k}="{ft[0].getAttribute(k)}"'
+                               for k in ("name", "language", "extensions", "fieldName")
+                               if ft[0].hasAttribute(k))
         print(f"OK: zip valid | entries={len(names)} | classes={classes}"
               f" | since={since} until={until} | lang({exts})")
+        print(f"    fileType: {ft_desc}")
     return 0
 
 

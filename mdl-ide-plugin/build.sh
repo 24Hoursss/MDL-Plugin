@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 # Build mdl-ide.jar against the installed PyCharm platform jars and install it
 # into the per-user plugins directory.
-# Uses the PyCharm-bundled JBR (JDK 25, includes javac) to match the platform
-# bytecode; the jar tool from any JDK works.
+# javac comes from the PyCharm-bundled JBR; pack.py assembles the jar (the JBR
+# ships no jar tool). Override with  MDL_IDE=<path>  /  PY=<python>.
 set -e
-IDE="C:/Program Files/JetBrains/PyCharm 2026.1.2"
+IDE="${MDL_IDE:-C:/Program Files/JetBrains/PyCharm 2026.2.3}"
 JAVAC="$IDE/jbr/bin/javac.exe"
-JAR="${JAR:-jar}"
+PY="${PY:-py -3}"
 IDELIB="$IDE/lib"
-PLUGIN_DIR="$APPDATA/JetBrains/PyCharm2026.1/plugins/mdl-ide"
+PLUGIN_DIR="$APPDATA/JetBrains/PyCharm2026.2/plugins/mdl-ide"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 OUT="$ROOT/build"
 
+# wipe stale classes: a removed source file would otherwise stay in the jar
+rm -rf "$OUT/classes"
 mkdir -p "$OUT/classes"
 
 "$JAVAC" -encoding UTF-8 --release 21 -cp "$IDELIB/*" -d "$OUT/classes" "$ROOT"/src/mdlide/*.java
-"$JAR" cf "$OUT/mdl-ide.jar" -C "$OUT/classes" . -C "$ROOT/resources" .
+$PY "$ROOT/pack.py"
 
 mkdir -p "$PLUGIN_DIR/lib"
 cp "$OUT/mdl-ide.jar" "$PLUGIN_DIR/lib/mdl-ide.jar"

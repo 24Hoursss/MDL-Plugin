@@ -2,9 +2,9 @@
     <id>mdlide.iccap-mdl</id>
     <name>IC-CAP MDL</name>
     <vendor>24Hoursss</vendor>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
 
-    <idea-version since-build="261" until-build="261.*"/>
+    <idea-version since-build="261" until-build="262.*"/>
 
     <description><![CDATA[
         Syntax highlighting, code folding and brace matching for Keysight IC-CAP
@@ -17,7 +17,11 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <fileTypeFactory implementationClass="mdlide.MdlFileTypeFactory"/>
+        <fileType name="MDL"
+                  language="MDL"
+                  implementationClass="mdlide.MdlFileType"
+                  fieldName="INSTANCE"
+                  extensions="mdl"/>
         <lang.parserDefinition language="MDL" implementationClass="mdlide.MdlParserDefinition"/>
         <lang.syntaxHighlighterFactory language="MDL" implementationClass="mdlide.MdlHighlighterFactory"/>
         <lang.foldingBuilder language="MDL" implementationClass="mdlide.MdlFoldingBuilder"/>

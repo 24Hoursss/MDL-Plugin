@@ -9,6 +9,9 @@ import javax.swing.*;
 
 /**
  * File type for Keysight IC-CAP model definition (MDIF) decks.
+ *
+ * <p>Registered by the {@code <fileType>} extension point, which reads the
+ * {@code INSTANCE} field named in plugin.xml; renaming it breaks registration.</p>
  */
 public final class MdlFileType extends LanguageFileType {
     public static final MdlFileType INSTANCE = new MdlFileType();
