@@ -38,7 +38,7 @@ mkdir -p "$ROOT/build/classes"
 "$JAVAC" -encoding UTF-8 --release 21 -cp "$IDE/lib/*" -d "$ROOT/build/classes" "$ROOT"/src/mdlide/*.java
 $PY "$ROOT/pack.py" --zip --verify-zip
 
-VERIFY_ZIP=$(ls "$ROOT"/dist/verify/mdl-ide-*-verify.zip | head -1)
+VERIFY_ZIP=$(ls "$ROOT"/dist/verify/mdl-ide-*-verify.zip | sort -V | tail -1)
 echo "[2/2] verifying $VERIFY_ZIP ..."
 # deps the verifier downloads (documented-problems page, plugin deps) need
 # github.com / plugins.jetbrains.com to be reachable; a fetch failure lands

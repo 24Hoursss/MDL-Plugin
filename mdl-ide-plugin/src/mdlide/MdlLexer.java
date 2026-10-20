@@ -203,6 +203,13 @@ public final class MdlLexer extends Lexer {
         return ((state >> CTX_SHIFT) & CTX_MASK) == CTX_PY;
     }
 
+    /** Whether the lexer state was inside a Program/Python body: the pair
+     * checker stays out of both, since their text is code, not MDL markup. */
+    public static boolean stateInBody(int state) {
+        int c = (state >> CTX_SHIFT) & CTX_MASK;
+        return c == CTX_PEL || c == CTX_PY;
+    }
+
     /** Whether the lexer state was at the first non-whitespace token of a line. */
     public static boolean stateAtLineStart(int state) {
         return (state & AT_LINE_START) != 0;
@@ -256,6 +263,16 @@ public final class MdlLexer extends Lexer {
             atLineStart = false;
             prevWasLink = false;
             myTokenType = MdlTokenTypes.NUMBER;
+        } else if (c == '#' && ctx == CTX_PY) {
+            // Python body: '#' opens a comment, so '(', '[' inside prose never
+            // reach the pair checker (e.g. "# bandwidth fraction (0,1]").
+            p++;
+            while (p < myEnd && myBuffer.charAt(p) != '\n') {
+                p++;
+            }
+            atLineStart = false;
+            prevWasLink = false;
+            myTokenType = MdlTokenTypes.COMMENT;
         } else if (c == '#') {
             p++;
             while (p < myEnd && isWordChar(myBuffer.charAt(p))) {

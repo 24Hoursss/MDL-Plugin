@@ -19,7 +19,8 @@ import java.util.regex.Pattern;
  * <ul>
  *   <li>structural column-0 braces must balance (unbalanced '{'/'}' is an
  *       error, exactly like mdl_edit.py's parse)</li>
- *   <li>parentheses / brackets / inline braces must pair (strings excluded)</li>
+ *   <li>parentheses / brackets / inline braces must pair (strings excluded;
+ *       Program/Python bodies are skipped - their text is code, not markup)</li>
  *   <li>strings must close on the same line (Python docstrings excluded)</li>
  *   <li>{@code param} and its {@code fullprecision} row must both exist</li>
  *   <li>an Optimize row with {@code Use=Yes} needs numeric Min and Max, and a
@@ -67,12 +68,16 @@ public final class MdlCheck {
             IElementType type = lexer.getTokenType();
             int start = lexer.getTokenStart();
             int end = lexer.getTokenEnd();
+            int state = lexer.getState();
+            // Program Body (PEL) and Macro Editor (Python) hold code, not deck
+            // markup: their parentheses/brackets are the language's own business.
+            boolean inBody = MdlLexer.stateInBody(state);
             if (type == MdlTokenTypes.LBRACE || type == MdlTokenTypes.RBRACE) {
                 boolean columnZero = start == 0 || text.charAt(start - 1) == '\n';
                 if (type == MdlTokenTypes.LBRACE) {
                     if (columnZero) {
                         structure.push(new int[]{start, end - start});
-                    } else {
+                    } else if (!inBody) {
                         inline.push(new int[]{start, '}'});
                     }
                 } else if (columnZero) {
@@ -82,21 +87,21 @@ public final class MdlCheck {
                     } else {
                         structure.pop();
                     }
-                } else {
+                } else if (!inBody) {
                     matchOrReport(inline, '}', start, end - start, issues);
                 }
-            } else if (type == MdlTokenTypes.LPAREN) {
+            } else if (type == MdlTokenTypes.LPAREN && !inBody) {
                 inline.push(new int[]{start, ')'});
-            } else if (type == MdlTokenTypes.RPAREN) {
+            } else if (type == MdlTokenTypes.RPAREN && !inBody) {
                 matchOrReport(inline, ')', start, end - start, issues);
-            } else if (type == MdlTokenTypes.BRACKET) {
+            } else if (type == MdlTokenTypes.BRACKET && !inBody) {
                 if (text.charAt(start) == '[') {
                     inline.push(new int[]{start, ']'});
                 } else {
                     matchOrReport(inline, ']', start, end - start, issues);
                 }
             } else if (type == MdlTokenTypes.STRING) {
-                if (!MdlLexer.stateInPython(lexer.getState())) {
+                if (!MdlLexer.stateInPython(state)) {
                     String token = text.substring(start, end);
                     if (token.length() < 2 || token.charAt(token.length() - 1) != '"') {
                         add(issues, true, start, 1,

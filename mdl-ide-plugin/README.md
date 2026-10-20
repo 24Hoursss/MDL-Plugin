@@ -31,9 +31,10 @@ Syntax highlighting, code folding and brace matching for Keysight IC-CAP `.mdl`
     (`FOR/STEP/NEXT`, `IF/ELSE/ENDIF`, `WHILE/ENDWHILE`, `GLOBAL_VAR`,
     `GET_REAL`, `ICCAP_FUNC`, `RETURN_VALUE`, ... case-insensitive), constants
     `PI`/`2PI`/`J` and `!` comments.
-  - **BLKEDIT "Macro Editor"** (per `iccap-python`): `#` lines stay marked as
-    directives; Python keyword coloring is provided by VSCode's embedded
-    `source.python` grammar.
+  - **BLKEDIT "Macro Editor"** (per `iccap-python`): body text is Python, so
+    `#` starts a line comment (including `# depend` / `# update` directives);
+    Python keyword coloring is provided by VSCode's embedded `source.python`
+    grammar.
 - **Folding**: column-0 brace blocks fold to their header line
   (`LINK XFORM "opt" "790.004"` -> `LINK PS "Parameter Set" ...` etc.).
   The structural-brace rule is the same one `mdl_edit.py` uses: only lines
@@ -137,7 +138,7 @@ fetches the documented-problems list and plugin dependencies).
 `publish.cmd` is the one-command publish check:
 
 1. compiles the plugin (no IDE plugins-dir write, safe while PyCharm runs)
-2. packs the Marketplace distribution zip `dist\mdl-ide-1.0.4.zip`
+2. packs the Marketplace distribution zip `dist\mdl-ide-1.0.5.zip`
    (root holds only `lib/`, plugin.xml inside the jar; `pack.py --zip` also
    writes `dist\verify\...-verify.zip` in the wrapper layout the verifier CLI
    wants)
@@ -156,7 +157,7 @@ set JB_MARKETPLACE_TOKEN=<token>
 publish.cmd
 ```
 
-Or just upload `dist\mdl-ide-1.0.4.zip` manually on the plugin page's Update
+Or just upload `dist\mdl-ide-1.0.5.zip` manually on the plugin page's Update
 tab. `set SKIP_PUBLISH=1` runs steps 1-3 only. The zip can also be installed
 with Settings -> Plugins -> Gear -> Install Plugin from Disk.
 
@@ -183,6 +184,10 @@ An annotator (`MdlAnnotator` / `MdlCheck`) flags problems with red squiggles
 
 - **Brace integrity**: unmatched `}` / unclosed `{` at column 0 (same rule as
   `mdl_edit.py`), plus unpaired `( )` `[ ]` and inline `{ }` (strings excluded).
+  Program Body (PEL) and Macro Editor (Python) bodies are skipped: their
+  parentheses and brackets belong to the embedded language, and `#` starts a
+  comment there, so prose like `# fraction (0,1]; larger = smoother` is not
+  parsed as deck markup.
 - **Strings**: a `"` without a closing quote on the same line (Python docstring
   bodies excluded).
 - **param/fullprecision**: a `param` row without its `fullprecision` twin

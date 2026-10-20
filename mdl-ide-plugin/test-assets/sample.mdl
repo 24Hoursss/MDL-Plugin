@@ -52,6 +52,8 @@ BLKEDIT "Macro Editor"
 {
 import iccap
 # depend icap
+# LOESS_FRAC = 0.35  # fraction (0,1]; larger = smoother
+# matrix rows[i] and a lone "(" are prose, not deck markup
 def process():
     type = "x"
     return size(type)
